@@ -12,6 +12,10 @@ resources:
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                 cluster: backend
+                metadataMatch:
+                  filterMetadata:
+                    envoy.lb:
+                      mesh: mesh1
                 statPrefix: backend
       name: outbound:127.0.0.1:18080
       trafficDirection: OUTBOUND
@@ -33,12 +37,14 @@ resources:
                     - metadataMatch:
                         filterMetadata:
                           envoy.lb:
+                            mesh: mesh1
                             role: master
                       name: db
                       weight: 10
                     - metadataMatch:
                         filterMetadata:
                           envoy.lb:
+                            mesh: mesh1
                             role: replica
                       name: db
                       weight: 90
@@ -90,6 +96,10 @@ resources:
                 prefix: /
               route:
                 cluster: api-http
+                metadataMatch:
+                  filterMetadata:
+                    envoy.lb:
+                      mesh: mesh1
   - name: outbound:127.0.0.1:40002
     resource:
       '@type': type.googleapis.com/envoy.api.v2.Listener
@@ -113,6 +123,10 @@ resources:
                         logName: |
                           logstash:1234;[%START_TIME%] %RESPONSE_FLAGS% mesh1 10.0.0.1(gateway)->%UPSTREAM_HOST%(api-tcp) took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes
                 cluster: api-tcp
+                metadataMatch:
+                  filterMetadata:
+                    envoy.lb:
+                      mesh: mesh1
                 statPrefix: api-tcp
       name: outbound:127.0.0.1:40002
       trafficDirection: OUTBOUND
@@ -123,6 +137,12 @@ resources:
       edsClusterConfig:
         edsConfig:
           ads: {}
+      lbSubsetConfig:
+        fallbackPolicy: ANY_ENDPOINT
+        subsetSelectors:
+          - fallbackPolicy: NO_FALLBACK
+            keys:
+              - mesh
       name: api-http
       outlierDetection:
         enforcingConsecutive5xx: 100
@@ -138,6 +158,12 @@ resources:
       edsClusterConfig:
         edsConfig:
           ads: {}
+      lbSubsetConfig:
+        fallbackPolicy: ANY_ENDPOINT
+        subsetSelectors:
+          - fallbackPolicy: NO_FALLBACK
+            keys:
+              - mesh
       name: api-tcp
       type: EDS
   - name: backend
@@ -147,6 +173,12 @@ resources:
       edsClusterConfig:
         edsConfig:
           ads: {}
+      lbSubsetConfig:
+        fallbackPolicy: ANY_ENDPOINT
+        subsetSelectors:
+          - fallbackPolicy: NO_FALLBACK
+            keys:
+              - mesh
       name: backend
       type: EDS
   - name: db
@@ -161,6 +193,7 @@ resources:
         subsetSelectors:
           - fallbackPolicy: NO_FALLBACK
             keys:
+              - mesh
               - role
       name: db
       type: EDS
